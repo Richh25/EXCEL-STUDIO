@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Excel | Básico a Modo Dios</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Login Section -->
+    <div id="login-view" class="view active-view">
+        <div class="login-container">
+            <div class="logo">
+                <i class="fa-solid fa-table-cells"></i>
+                <h1>Master <span>Excel</span></h1>
+            </div>
+            <p class="subtitle">Asume el control de tus datos. De Básico a Modo Dios.</p>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="username">¿Cómo te llamas?</label>
+                    <input type="text" id="username" placeholder="Ingresa tu nombre..." required autocomplete="off">
+                </div>
+                <button type="submit" class="btn-primary">
+                    Comenzar Curso <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+        <div class="background-elements">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+        </div>
+    </div>
+
+    <!-- Main App Section -->
+    <div id="app-view" class="view">
+        <aside class="sidebar">
+            <div class="logo small">
+                <i class="fa-solid fa-table-cells"></i>
+                <h2>Master <span>Excel</span></h2>
+            </div>
+            <div class="user-profile">
+                <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                <div>
+                    <p class="greeting">Hola, <span id="display-name">Estudiante</span></p>
+                    <p class="level-text">Nivel Actual: <span id="current-level-badge">Principiante</span></p>
+                </div>
+            </div>
+
+            <div class="wallet-box" title="Excel Coins: Úsalas en la tienda para comprar pistas y power-ups">
+                <i class="fa-solid fa-coins animate__animated animate__pulse animate__infinite"></i>
+                <div class="wallet-text">
+                    <span id="coin-count">0</span> EC
+                </div>
+            </div>
+
+            <div class="streak-box" title="Aprende cada día para no perder tu racha">
+                <i class="fa-solid fa-fire heartbeat"></i>
+                <div class="streak-text">
+                    <span id="streak-count">0</span> Días de Racha 🔥
+                </div>
+            </div>
+
+            <nav class="main-nav">
+                <a href="#" class="nav-item active" data-target="dashboard">
+                    <i class="fa-solid fa-house"></i> Dashboard
+                </a>
+                <a href="#" class="nav-item" data-target="course-modules">
+                    <i class="fa-solid fa-graduation-cap"></i> Módulos
+                </a>
+                <a href="#" class="nav-item" data-target="tips">
+                    <i class="fa-solid fa-lightbulb"></i> Trucos y Atajos
+                </a>
+                <a href="#" class="nav-item" data-target="shop-view">
+                    <i class="fa-solid fa-store"></i> Tienda de Items
+                </a>
+                <a href="#" class="nav-item logout-btn" id="logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Salir
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <!-- Dashboard View -->
+            <section id="dashboard" class="content-section active-section">
+                <header class="section-header">
+                    <h1>Tu Progreso</h1>
+                    <div class="progress-card">
+                        <div class="progress-info">
+                            <h3>Progreso General</h3>
+                            <span id="overall-progress-text">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar shiny-effect" id="overall-progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <div class="dash-card feature">
+                        <div class="card-icon"><i class="fa-solid fa-rocket"></i></div>
+                        <h3>Continuar Aprendiendo</h3>
+                        <p>Última lección: <strong id="last-lesson-text">Fórmulas Básicas</strong></p>
+                        <button class="btn-secondary mt-15" id="btn-continue">Ir al Módulo</button>
+                    </div>
+
+                    <div class="dash-card stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-completed">0</div>
+                            <div class="stat-label">Lecciones</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-tips">0</div>
+                            <div class="stat-label">Atajos</div>
+                        </div>
+                    </div>
+
+                    <div class="dash-card skill-radar-card" style="grid-column: span 2;">
+                        <h3><i class="fa-solid fa-chart-line"></i> Radar de Habilidades</h3>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="skillRadarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Modules View -->
+            <section id="course-modules" class="content-section">
+                <header class="section-header">
+                    <h1>Módulos del Curso</h1>
+                    <p>Completa las lecciones para avanzar de nivel.</p>
+                </header>
+
+                <div class="modules-container" id="modules-list">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Tips View -->
+            <section id="tips" class="content-section" style="padding: 0;">
+                <div class="tiktok-container">
+                    <div class="tiktok-feed" id="tips-feed">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="tiktok-nav">
+                        <button id="tiktok-up" class="tiktok-btn"><i class="fa-solid fa-chevron-up"></i></button>
+                        <button id="tiktok-down" class="tiktok-btn"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Shop View -->
+            <section id="shop-view" class="content-section">
+                <header class="section-header">
+                    <h1>Tienda Excel Pro</h1>
+                    <p>Canjea tus Excel Coins por ventajas estratégicas.</p>
+                </header>
+                <div class="shop-grid" id="shop-items-list">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal de Lectura -->
+    <div id="lesson-modal" class="modal">
+        <div class="modal-content">
+            <div class="timer-attack-box" id="modal-timer-attack">¡RÁPIDO! 20s</div>
+            <button class="close-modal" id="close-modal-btn"><i class="fa-solid fa-times"></i></button>
+            <div class="modal-header">
+                <div class="modal-icon"><i id="modal-icon-elem" class="fa-solid fa-book"></i></div>
+                <div>
+                    <h2 id="modal-title">Título Lección</h2>
+                    <span class="level-tag" id="modal-level">Básico</span>
+                </div>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Populated by JS -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" id="btn-complete-lesson" style="background:#8b5cf6;">
+                    <span>Completar y Siguiente </span> <i class="fa-solid fa-forward-step"
+                        style="margin-left:5px;"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltips FOMO y Gamificación Oculta -->
+    <div id="social-proof-toast" class="social-toast">
+        <i class="fa-solid fa-bolt" style="color: #f59e0b;"></i>
+        <span id="toast-text">Alguien acaba de completar un módulo.</span>
+    </div>
+
+    <!-- Contenedor para animar +XP -->
+    <div id="xp-floating-container"></div>
+
+    <!-- IA Tutor Clippy 2.0 Container -->
+    <div id="clippy-container" class="clippy-hidden">
+        <div class="clippy-bubble">
+            <p id="clippy-msg">¿Necesitas una mano con esa fórmula?</p>
+            <div class="clippy-actions">
+                <button id="clippy-hint-btn">Dame una pista (5 EC)</button>
+                <button id="clippy-close-btn">No, gracias</button>
+            </div>
+        </div>
+        <div class="clippy-avatar">
+            <i class="fa-solid fa-paperclip animate__animated animate__bounce animate__infinite"></i>
+        </div>
+    </div>
+
+    <!-- Admin Mode Modal (Secret) -->
+    <div id="admin-modal" class="modal" style="z-index: 10000;">
+        <div class="modal-content"
+            style="max-width: 400px; background: #1e293b; color: white; border: 2px solid #ef4444; border-radius: 16px;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-user-shield" style="color: #cb8c39;"></i> Panel Maestro</h2>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <label>Set Excel Coins (EC):</label>
+                    <input type="number" id="admin-coins-input"
+                        style="width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 1.2rem;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <button class="btn-primary" onclick="adminSetCoins()"
+                        style="background: #10b981; border:none; padding: 12px;">Actualizar Saldo</button>
+                    <button class="btn-primary" onclick="adminUnlockAll()"
+                        style="background: #3b82f6; border:none; padding: 12px;">Desbloquear Todo</button>
+                    <button class="btn-primary" onclick="adminResetAll()"
+                        style="background: #ef4444; border:none; padding: 12px;">Resetear Progreso</button>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding-top:0;">
+                <button class="btn-primary" onclick="document.getElementById('admin-modal').classList.remove('active')"
+                    style="background:#64748b; border:none; width:100%;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="content/m0.js"></script>
+    <script src="content/m1.js"></script>
+    <script src="content/m2.js"></script>
+    <script src="content/m3.js"></script>
+    <script src="content/m4.js"></script>
+    <script src="content/m5.js"></script>
+    <script src="content/m6.js"></script>
+    <script src="content/m7.js"></script>
+    <script src="content/m8.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
