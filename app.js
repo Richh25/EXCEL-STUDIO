@@ -167,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentUser) {
         showApp();
         if(godModeActive) document.body.classList.add('god-mode-active');
+        else document.body.classList.remove('god-mode-active');
         renderUserData();
         renderModules();
         renderTips();
@@ -462,6 +463,7 @@ function attachMiniExcelLogic() {
     
     formulaBar.addEventListener('input', (e) => {
         if(activeCell) {
+            activeCell.removeAttribute('data-unformatted-value');
             activeCell.value = e.target.value;
             activeCell.setAttribute('data-formula', e.target.value);
             evaluateCell(activeCell); 
@@ -495,7 +497,7 @@ function attachMiniExcelLogic() {
             return;
         }
 
-        // 3. Formatos (Ctrl + Shift + $ / %)
+        // 3. Formatos (Ctrl + Shift + $, %, #, ^, @)
         if (e.ctrlKey && e.shiftKey) {
             if (e.key === '$' || e.keyCode === 52) { 
                 e.preventDefault(); 
@@ -505,6 +507,21 @@ function attachMiniExcelLogic() {
             if (e.key === '%' || e.keyCode === 53) { 
                 e.preventDefault(); 
                 applyFormatLogic(activeCell, '%'); 
+                return; 
+            }
+            if (e.key === '#' || e.keyCode === 51) { 
+                e.preventDefault(); 
+                applyFormatLogic(activeCell, '#'); 
+                return; 
+            }
+            if (e.key === '^' || e.keyCode === 54) { 
+                e.preventDefault(); 
+                applyFormatLogic(activeCell, '^'); 
+                return; 
+            }
+            if (e.key === '@' || e.keyCode === 50 || e.keyCode === 81) { 
+                e.preventDefault(); 
+                applyFormatLogic(activeCell, '@'); 
                 return; 
             }
         }
@@ -557,6 +574,7 @@ function attachMiniExcelLogic() {
         });
         
         cell.addEventListener('input', (e) => {
+            e.target.removeAttribute('data-unformatted-value');
             formulaBar.value = e.target.value;
             e.target.setAttribute('data-formula', e.target.value);
         });
@@ -710,15 +728,42 @@ function applyF4Logic(cell) {
 }
 
 function applyFormatLogic(cell, type) {
-    let v = parseFloat(cell.value) || 0;
+    if (!cell.hasAttribute('data-unformatted-value') || !cell.getAttribute('data-unformatted-value')) {
+        cell.setAttribute('data-unformatted-value', cell.value);
+    }
+    
+    let originalText = cell.getAttribute('data-unformatted-value');
+    let v = parseFloat(originalText) || 0;
+    
+    let newVal = cell.value;
     if (type === '$') {
-        cell.value = `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        newVal = `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        showClippy("Formato Moneda aplicado. 💰", 2000);
     } else if (type === '%') {
         if (v < 10) v = v * 100;
-        cell.value = `${v}%`;
+        newVal = `${v}%`;
+        showClippy("Formato Porcentaje aplicado. 📈", 2000);
+    } else if (type === '#') {
+        if (v > 1000) {
+            newVal = new Date((v - 25569) * 86400 * 1000).toLocaleDateString('es-MX');
+        } else {
+            newVal = "10/10/2024";
+        }
+        showClippy("Formato Fecha aplicado. 📅", 2000);
+    } else if (type === '^') {
+        newVal = v.toExponential(1);
+        showClippy("Formato Científico aplicado. ⚛️", 2000);
+    } else if (type === '@') {
+        if (originalText.toUpperCase() === 'HOY') {
+            newVal = new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        } else if (v > 0) {
+            newVal = new Date((v - 25569) * 86400 * 1000).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        showClippy("Formato Fecha Larga aplicado. 🕰️", 2000);
     }
+
+    cell.value = newVal;
     evaluateCell(cell);
-    showClippy(type === '$' ? "Formato Moneda aplicado. 💰" : "Formato Porcentaje aplicado. 📈", 2000);
 }
 
 
@@ -935,7 +980,39 @@ function finalizeValidation(cell) {
             const currentFormula = currentCell.getAttribute('data-formula') || "";
             
             // 1. Verificar si el valor es correcto
-            const isValueCorrect = currentVal.toString().toUpperCase() === targetVal.toString().toUpperCase();
+            let isValueCorrect = currentVal.toString().toUpperCase().trim() === targetVal.toString().toUpperCase().trim();
+            
+            // Flexibilidad para formatos originales antes de aplicar atajos
+            const unformatted = currentCell.getAttribute('data-unformatted-value');
+            if (!isValueCorrect && unformatted && unformatted.toString().toUpperCase().trim() === targetVal.toString().toUpperCase().trim()) {
+                isValueCorrect = true;
+            }
+
+            // Flexibilidad para formatos dinámicos (Moneda, Porcentaje)
+            if (!isValueCorrect) {
+                 const rawCurrent = currentVal.toString().trim();
+                 const rawTarget = targetVal.toString().trim();
+                 
+                 // Soporte Moneda
+                 if (rawCurrent.includes('$')) {
+                     const cleanCurrent = parseFloat(rawCurrent.replace(/[^\d.-]/g, ''));
+                     const cleanTarget = parseFloat(rawTarget.replace(/[^\d.-]/g, ''));
+                     if (!isNaN(cleanCurrent) && cleanCurrent === cleanTarget) {
+                         isValueCorrect = true;
+                     }
+                 }
+                 // Soporte Porcentaje
+                 if (rawCurrent.includes('%')) {
+                     const numCurrent = parseFloat(rawCurrent.replace(/[^\d.-]/g, '')); // ej: 50
+                     const cleanTarget = parseFloat(rawTarget.replace(/[^\d.-]/g, '')); // ej: 0.5
+                     if (!isNaN(numCurrent)) {
+                         // Si es 50 (de 50%) y el target era 0.5, o si el target ya era 50
+                         if ((numCurrent / 100) === cleanTarget || numCurrent === cleanTarget) {
+                             isValueCorrect = true;
+                         }
+                     }
+                 }
+            }
             
             // 2. Verificar si se requiere fórmula y si se usó
             const isFormulaUsed = currentFormula.startsWith('=');
@@ -1135,9 +1212,13 @@ function renderQuizQuestion() {
     const optionsWithIndices = quizData.options.map((opt, i) => ({ text: opt, originalIndex: i }));
     shuffleArray(optionsWithIndices);
     
+    const currentMod = courseModules.find(m => m.id === currentQuizMod);
+    const levelNameMap = { 'basic': 'Básico', 'advanced': 'Avanzado', 'god': 'Experto' };
+    const levelName = currentMod ? levelNameMap[currentMod.level] : "Evaluación";
+    
     document.getElementById('modal-title').textContent = `Prueba de Rendimiento (${currentQuizIdx + 1}/${questions.length})`;
-    document.getElementById('modal-level').textContent = "Examen Oficial";
-    document.getElementById('modal-level').className = 'level-tag level-god';
+    document.getElementById('modal-level').textContent = levelName;
+    document.getElementById('modal-level').className = `level-tag level-${currentMod ? currentMod.level : 'god'}`;
     document.getElementById('modal-icon-elem').className = 'fa-solid fa-graduation-cap';
     
     let html = `<div class="quiz-container" id="quiz-container-box" style="color:#fff;">
@@ -1336,7 +1417,7 @@ function updateDashboardStats() {
     let badgeText = 'Principiante';
     if (progressPercent >= 30) badgeText = 'Intermedio';
     if (progressPercent >= 60) badgeText = 'Avanzado';
-    if (progressPercent >= 100) badgeText = 'Modo Dios';
+    if (progressPercent >= 100) badgeText = 'Máster de Excel';
     document.getElementById('current-level-badge').textContent = badgeText;
 }
 
