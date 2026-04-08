@@ -37,9 +37,9 @@ const m0 = {
             content: `<h3>Ctrl + E</h3><p>Este atajo selecciona todo tu rango actual de golpe. ¡Esencial para ganar velocidad!</p><div class="tutorial-step"><strong>RETO:</strong> Escribe <b>Todo</b> en A1.</div>`
         },
         {
-            id: 'm0_l8', title: 'Eliminar Celdas (Ctrl + -)', desc: 'Escribe Borrar en C1.', icon: 'fa-trash-can',
-            mockData: { 'C1': 'Dato Antiguo' }, challenge: { cell: 'C1', value: 'Borrar' },
-            content: `<h3>Limpieza Veloz</h3><p>Con Ctrl y la tecla menos (-), puedes eliminar filas o columnas enteras seleccionadas.</p><div class="tutorial-step"><strong>RETO:</strong> Escribe <b>Borrar</b> sobre C1.</div>`
+            id: 'm0_l8', title: 'Eliminar Celdas (Ctrl + -)', desc: 'Borra el contenido de C1 usando Ctrl y el signo menos.', icon: 'fa-trash-can',
+            mockData: { 'C1': 'Dato Antiguo' }, challenge: { cell: 'C1', value: '' },
+            content: `<h3>Limpieza Veloz</h3><p>Con <b>Ctrl</b> y la tecla menos (<b>-</b>), puedes eliminar el contenido de una celda seleccionada al instante. ¡Es mucho más rápido que usar el ratón!</p><div class="tutorial-step"><strong>RETO:</strong> Selecciona C1 (que tiene "Dato Antiguo") y presiona <b>Ctrl + -</b> para dejarla limpia.</div>`
         },
         {
             id: 'm0_l9', title: 'Zoom Dinámico (Ctrl+Shift+L)', desc: 'Escribe Zoom en A1.', icon: 'fa-magnifying-glass-plus',

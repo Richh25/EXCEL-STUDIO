@@ -163,7 +163,7 @@ let currentQuizIdx = 0;
 
 // --- Inicialización ---
 document.addEventListener('DOMContentLoaded', () => {
-    loadState();
+    loadState(); // Intenta cargar la sesión activa
     if (currentUser) {
         showApp();
         if(godModeActive) document.body.classList.add('god-mode-active');
@@ -233,24 +233,32 @@ function setupEventListeners() {
 
 function login(username) {
     currentUser = username;
-    saveState();
+    loadState(username); // Cargar datos específicos del usuario
     showApp();
     renderUserData();
     renderModules();
     renderTips();
     updateDashboardStats();
+    if(godModeActive) document.body.classList.add('god-mode-active');
+    else document.body.classList.remove('god-mode-active');
+    renderShop();
+    showClippy(`¡Bienvenido de nuevo a Aprende BAMX, ${username}! 🍎`);
 }
 
 function logout() {
+    saveState(); // Guardar antes de salir
     currentUser = null;
+    userProgress = [];
     userQuizzes = [];
     excelCoins = 0;
+    streakDays = 0;
+    lastLoginDate = null;
+    godModeActive = false;
     skillPoints = { logic: 0, formulas: 0, analysis: 0, formatting: 0, shortcuts: 0 };
-    localStorage.removeItem('excel_app_user');
-    localStorage.removeItem('excel_app_progress');
-    localStorage.removeItem('excel_app_quizzes');
-    localStorage.removeItem('excel_app_coins');
-    localStorage.removeItem('excel_app_skills');
+    document.body.classList.remove('god-mode-active');
+    
+    // Solo removemos la sesión activa, NO la base de datos
+    localStorage.removeItem('bamx_active_session'); 
     showLogin();
 }
 
@@ -500,6 +508,24 @@ function attachMiniExcelLogic() {
                 return; 
             }
         }
+
+        // 4. Eliminar Celda (Ctrl + -)
+        if (e.ctrlKey && (e.key === '-' || e.keyCode === 189 || e.keyCode === 109)) {
+            e.preventDefault();
+            activeCell.value = '';
+            activeCell.setAttribute('data-formula', '');
+            evaluateCell(activeCell);
+            
+            // Animación de pulso de borrado
+            activeCell.style.transition = 'all 0.3s';
+            activeCell.style.background = 'rgba(239, 68, 68, 0.4)';
+            setTimeout(() => { 
+                activeCell.style.background = '#fff';
+            }, 300);
+            
+            showClippy("Celda eliminada (Ctrl + -). ¡Limpieza impecable! 🧹", 2000);
+            return;
+        }
     };
     
     formulaBar.addEventListener('blur', () => {
@@ -714,8 +740,24 @@ function getRangeValues(rangeStr) {
         for (let c = startCol.charCodeAt(0); c <= endCol.charCodeAt(0); c++) {
             const cellId = String.fromCharCode(c) + r;
             const refInput = document.getElementById('cell-' + cellId);
-            const val = parseFloat(refInput ? refInput.value : 0) || 0;
-            values.push(val);
+            if (!refInput) {
+                values.push(0);
+                continue;
+            }
+            
+            let rawVal = refInput.value.trim();
+            
+            // Detección numérica avanzada (ignora símbolos pero valida si es número)
+            let cleanStr = rawVal.replace(/[^\d.-]/g, '');
+            let num = parseFloat(cleanStr);
+            
+            if (!isNaN(num) && cleanStr !== "" && !rawVal.match(/[a-zA-Z]/)) {
+                // Es un número real (no tiene letras mezcladas)
+                values.push(num);
+            } else {
+                // Es texto o vacío
+                values.push(rawVal);
+            }
         }
     }
     return values;
@@ -751,12 +793,15 @@ function evaluateCell(cell) {
                     return vals.filter(process).length;
                 }
                 const vals = getRangeValues(argParts[0]);
-                if (func === 'SUMA') return vals.reduce((a, b) => a + b, 0);
-                if (func === 'PROMEDIO') return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
-                if (func === 'MAX') return Math.max(...vals);
-                if (func === 'MIN') return Math.min(...vals);
+                // --- Filtro Numérico Universal para funciones matemáticas ---
+                const numVals = vals.filter(v => typeof v === 'number' && !isNaN(v));
+
+                if (func === 'SUMA') return numVals.reduce((a, b) => a + b, 0);
+                if (func === 'PROMEDIO') return numVals.length ? (numVals.reduce((a, b) => a + b, 0) / numVals.length) : 0;
+                if (func === 'MAX') return numVals.length ? Math.max(...numVals) : 0;
+                if (func === 'MIN') return numVals.length ? Math.min(...numVals) : 0;
                 // --- Soporte Especial para Conteo ---
-                if (func === 'CONTAR') return vals.filter(v => typeof v === 'number' && !isNaN(v)).length;
+                if (func === 'CONTAR') return numVals.length;
                 if (func === 'CONTARA') return vals.filter(v => v !== "" && v !== null).length;
                 return 0;
             });
@@ -1024,7 +1069,11 @@ function openLessonModal(lessonId) {
     }
 
     // Show modal
-    document.getElementById('lesson-modal').classList.add('active');
+    const modal = document.getElementById('lesson-modal');
+    modal.classList.add('active');
+    
+    // Asegurar que el scroll empiece arriba para ver las instrucciones
+    modalBody.scrollTop = 0;
     
     // Auto-scroll al inicio del modal para ver las instrucciones (Desplazamiento Suave)
     if (modalBody) {
@@ -1318,34 +1367,39 @@ function fireReward(e) {
 // --- Almacenamiento Local (LocalStorage) ---
 function saveState() {
     if (!currentUser) return;
-    localStorage.setItem('excel_app_user', currentUser);
-    localStorage.setItem('excel_app_progress', JSON.stringify(userProgress));
-    localStorage.setItem('excel_app_quizzes', JSON.stringify(userQuizzes));
-    localStorage.setItem('excel_app_streak', streakDays);
-    localStorage.setItem('excel_app_date', lastLoginDate);
-    localStorage.setItem('excel_app_coins', excelCoins);
-    localStorage.setItem('excel_app_skills', JSON.stringify(skillPoints));
-    localStorage.setItem('excel_app_godmode', godModeActive);
+    const prefix = `bamx_user_${currentUser}_`;
+    localStorage.setItem('bamx_active_session', currentUser);
+    localStorage.setItem(`${prefix}progress`, JSON.stringify(userProgress));
+    localStorage.setItem(`${prefix}quizzes`, JSON.stringify(userQuizzes));
+    localStorage.setItem(`${prefix}streak`, streakDays);
+    localStorage.setItem(`${prefix}date`, lastLoginDate);
+    localStorage.setItem(`${prefix}coins`, excelCoins);
+    localStorage.setItem(`${prefix}skills`, JSON.stringify(skillPoints));
+    localStorage.setItem(`${prefix}godmode`, godModeActive);
 }
 
-function loadState() {
-    const storedUser = localStorage.getItem('excel_app_user');
-    const storedProgress = localStorage.getItem('excel_app_progress');
-    const storedQuizzes = localStorage.getItem('excel_app_quizzes');
-    const storedStreak = localStorage.getItem('excel_app_streak');
-    const storedDate = localStorage.getItem('excel_app_date');
-    const storedCoins = localStorage.getItem('excel_app_coins');
-    const storedSkills = localStorage.getItem('excel_app_skills');
-    const storedGod = localStorage.getItem('excel_app_godmode');
+function loadState(username) {
+    const userToLoad = username || localStorage.getItem('bamx_active_session');
+    if (!userToLoad) return;
     
-    if (storedUser) currentUser = storedUser;
-    if (storedProgress) userProgress = JSON.parse(storedProgress);
-    if (storedQuizzes) userQuizzes = JSON.parse(storedQuizzes);
-    if (storedStreak) streakDays = parseInt(storedStreak);
-    if (storedDate) lastLoginDate = storedDate;
-    if (storedCoins) excelCoins = parseInt(storedCoins);
-    if (storedSkills) skillPoints = JSON.parse(storedSkills);
-    if (storedGod) godModeActive = (storedGod === 'true');
+    currentUser = userToLoad;
+    const prefix = `bamx_user_${userToLoad}_`;
+    
+    const storedProgress = localStorage.getItem(`${prefix}progress`);
+    const storedQuizzes = localStorage.getItem(`${prefix}quizzes`);
+    const storedStreak = localStorage.getItem(`${prefix}streak`);
+    const storedDate = localStorage.getItem(`${prefix}date`);
+    const storedCoins = localStorage.getItem(`${prefix}coins`);
+    const storedSkills = localStorage.getItem(`${prefix}skills`);
+    const storedGod = localStorage.getItem(`${prefix}godmode`);
+    
+    userProgress = storedProgress ? JSON.parse(storedProgress) : [];
+    userQuizzes = storedQuizzes ? JSON.parse(storedQuizzes) : [];
+    streakDays = storedStreak ? parseInt(storedStreak) : 0;
+    lastLoginDate = storedDate || null;
+    excelCoins = storedCoins ? parseInt(storedCoins) : 0;
+    skillPoints = storedSkills ? JSON.parse(storedSkills) : { logic: 0, formulas: 0, analysis: 0, formatting: 0, shortcuts: 0 };
+    godModeActive = (storedGod === 'true');
 
     if (currentUser) {
         const todayStr = new Date().toISOString().split('T')[0];
@@ -1426,30 +1480,51 @@ const shopItems = [
 function renderShop() {
     const list = document.getElementById('shop-items-list');
     if(!list) return;
-    list.innerHTML = shopItems.map(item => `
-        <div class="shop-item">
-            <i class="fa-solid ${item.icon}"></i>
-            <h3>${item.title}</h3>
-            <p>${item.desc}</p>
-            <div class="shop-price">${item.price} EC</div>
-            <button class="btn-primary" onclick="buyItem('${item.id}', ${item.price})">Comprar</button>
-        </div>
-    `).join('');
+    list.innerHTML = shopItems.map(item => {
+        let buttonHtml = `<button class="btn-primary" onclick="buyItem('${item.id}', ${item.price})">Comprar</button>`;
+        
+        if (item.id === 'skin_god' && godModeActive) {
+            buttonHtml = `<button class="btn-primary" style="background:var(--accent);" onclick="refundGodMode()">Reembolsar</button>`;
+        }
+
+        return `
+            <div class="shop-item">
+                <i class="fa-solid ${item.icon}"></i>
+                <h3>${item.title}</h3>
+                <p>${item.desc}</p>
+                <div class="shop-price">${item.price} EC</div>
+                ${buttonHtml}
+            </div>
+        `;
+    }).join('');
 }
 
 window.buyItem = function(id, price) {
     if (excelCoins >= price) {
         excelCoins -= price;
         saveState();
-        renderUserData();
-        alert(`¡Has comprado: ${id}! El item se ha activado automáticamente.`);
         if(id === 'skin_god') {
             godModeActive = true;
             document.body.classList.add('god-mode-active');
             saveState();
+            renderShop();
         }
+        renderUserData();
+        alert(`¡Has comprado: ${id}! El item se ha activado automáticamente.`);
     } else {
         alert("Excel Coins insuficientes. ¡Sigue aprendiendo para ganar más!");
+    }
+};
+
+window.refundGodMode = function() {
+    if (godModeActive) {
+        godModeActive = false;
+        excelCoins += 50; // Reembolso total
+        document.body.classList.remove('god-mode-active');
+        saveState();
+        renderUserData();
+        renderShop();
+        alert("Skin desactivada. Se han reembolsado 50 EC a tu cuenta.");
     }
 };
 
