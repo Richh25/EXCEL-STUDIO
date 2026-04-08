@@ -918,8 +918,13 @@ function evaluateCell(cell) {
                 if (func === 'SI.ERROR') {
                     try {
                         let res = argParts[0].replace(/([\$]?[A-D][\$]?[1-5])/g, m => document.getElementById('cell-'+m.replace(/\$/g,'')).value);
-                        return eval(res);
-                    } catch(e) { return argParts[1].replace(/"/g, ''); }
+                        let val = eval(res);
+                        // En Excel, división entre cero da #DIV/0! (error). En JS da Infinity. Simulamos el error aquí:
+                        if (val === Infinity || val === -Infinity || isNaN(val)) {
+                            throw new Error("Division by zero or invalid Math");
+                        }
+                        return val;
+                    } catch(e) { return argParts[1] ? argParts[1].replace(/"/g, '') : ''; }
                 }
                 return '#ERROR!';
             });
