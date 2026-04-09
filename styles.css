@@ -392,6 +392,13 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
 }
+.skill-radar-card {
+    grid-column: span 2;
+}
+.radar-container {
+    height: 300px;
+    width: 100%;
+}
 
 .dash-card {
     background: var(--bg-card);
@@ -1020,6 +1027,10 @@ body {
     .main-content { padding: 1rem 1rem 5rem 1rem; flex-grow: 1; overflow-y: auto; height: auto; }
     
     .dashboard-grid { grid-template-columns: 1fr; }
+    .skill-radar-card { grid-column: 1; margin-bottom: 2rem; }
+    .radar-container { height: 240px; }
+    
+    .stats { flex-direction: column; gap: 1rem; }
     .lessons-grid { grid-template-columns: 1fr; }
     .shop-grid { grid-template-columns: 1fr; }
 }
